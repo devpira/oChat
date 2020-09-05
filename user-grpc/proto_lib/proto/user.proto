@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package oChat.main.grpc.user;
+
+service User {
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc GetUser(GetUserRequest) returns (GetUserResponse);
+}
+
+message CreateUserRequest {
+    string uid = 1;
+    string displayName = 2;
+    string email = 3;
+    string imageUrl = 4;
+}
+
+message CreateUserResponse {
+    string insertedId = 1;
+}
+
+message GetUserRequest{
+    string uid = 1;
+}
+
+message GetUserResponse {
+    string _id = 1;
+    string uid = 2;
+    string displayName = 3;
+    string email = 4;
+    string imageUrl = 5;
+}

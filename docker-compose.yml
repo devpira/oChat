@@ -1,0 +1,87 @@
+version: '3'
+services:
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: oChat
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodata:/data/db 
+      - ./mongodb/setup:/docker-entrypoint-initdb.d
+
+  user-grpc:
+    build:
+      context: ./user-grpc
+    image: user-grpc
+    container_name: user-grpc
+    restart: unless-stopped
+    environment:
+      - MONGODB_HOST=192.168.99.100
+      - MONGODB_USER=root
+      - MONGODB_PASSWORD=rootpassword
+      - MONGODB_PORT=27017
+      - MONGODB_DATABASE=oChat
+      - FLUENTD_HOST=192.168.99.100
+      - FLUENTD_PORT=24224
+      - FLUENTD_IDENTIFIER=user-grpc
+    ports:
+      - 8000:8000
+    working_dir: /app
+    volumes:
+      - ./user-grpc:/app
+    networks:
+      - oChat-network
+
+  fluentd:
+    build:
+      context: ./fluentd
+    image: fluentd
+    container_name: fluentd
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+    ports:
+      - 24224:24224
+      - 24224:24224/udp
+    networks:
+      - oChat-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.2.0
+    container_name: elasticsearch
+    environment:
+      - "discovery.type=single-node"
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    expose:
+      - "9200"
+    ports:
+      - 9200:9200
+    networks:
+      - oChat-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:7.2.0
+    container_name: kibana
+    volumes:
+      - ./kibana/config:/usr/share/kibana/config
+    ports:
+      - 5601:5601
+    networks:
+      - oChat-network
+    depends_on: 
+      - elasticsearch 
+      
+networks:
+  oChat-network:
+    driver: bridge
+
+volumes:
+  mongodata:
+    driver: local
+  esdata1:
+    driver: local
